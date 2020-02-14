@@ -1,0 +1,220 @@
+// https://riptutorial.com/gradle/example/19058/how-to-write-a-standalone-plugin
+
+// В корневом build.gradle можно хранить все, что относится ко всем проектам
+// Но можно также вообще все настройки 
+
+// apply plugin: "idea"			// Генерация файлов проектов для соответствующих IDE
+apply plugin: "eclipse"
+apply plugin: "java"
+
+// Плагин гаходится локально в дирректории buildSrc/src/main/java/com/everlapp/GreetingPlugin.java
+apply plugin: com.everlapp.GreetingPlugin
+
+import org.apache.commons.codec.binary.Base64
+
+
+repositories{
+      mavenCentral()
+}
+
+// Подключаем удаленный репозиторий Maven и библиотеку Base64
+// Внешние зависимости
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'commons-codec', name: 'commons-codec', version: '1.2'
+    }
+}
+
+
+// Настройки подпроектов
+subprojects {
+    // apply plugin: "java"
+
+    tasks.withType(JavaCompile) {
+        sourceCompatibility = JavaVersion.VERSION_1_7
+        targetCompatibility = JavaVersion.VERSION_1_7
+    }
+
+    repositories {
+        mavenCentral()
+    }
+
+
+}
+
+
+dependencies {
+
+	// Необходимо для обработки локальных плагинов
+    implementation gradleApi()
+}
+
+/* task wrapper(type: Wrapper) {
+    gradleVersion = "1.12"
+} */
+
+// Переопределение данных, находящихся в plugin extension
+greeting {
+      greeter = "Stranger"
+      message = "Message from the build script!"
+}
+
+
+
+// ------------ Examples gradle --------------
+
+// Пример простейшей задачи
+task helloSimple {
+	// createSchema.enabled = false
+
+	// Через ext. - можно определить глобальное свойство
+	ext.myProperty = "myValue"
+	doLast {
+		println "Hello from Gradle! (main root build.gradle)"
+	}
+}
+
+// При выполнении задачи список действий выполняется по порядку
+helloSimple.doFirst {
+	println "Call task BEFORE helloSimple"
+}
+
+helloSimple.configure {
+	doLast {
+		println "Call task AFTER helloSimple"
+	}
+}
+
+
+task intro {
+	dependsOn helloSimple			// Сначала вызывается задача helloSimple
+	doLast {
+		println "I'm a Gradle"
+	}
+}
+
+// Выводим свойство из таски helloSimple
+task printTaskProperties {
+	doLast {
+		println helloSimple.myProperty
+	}
+}
+
+// ------ Default tasks ----------------
+// Если запускаем ./gradlew -b build.gradle -q то выполняются таски по умолчанию, объявленные здесь
+defaultTasks 'cleanDefault', 'runDefault'
+
+task cleanDefault {
+	doLast {
+		println "Default task Clean!"
+	}
+}
+
+task runDefault {
+	doLast {
+		println "Default task Run!"
+	}
+}
+
+task notDefaultTask {
+	doLast {
+		println "Not default task. Not include to defaultTasks"
+	}
+}
+
+
+// ------------------------------------
+task createSchema
+
+// Объявляем зависимость 'loadTestData' от 'createSchema'
+// Остальные зависимости, определённые ранее, остаются неизменными
+task loadTestData {
+    dependsOn createSchema
+}
+
+// --- doFirst ----
+task setupDatabaseTests {
+    // Здесь определена текущая операция задачи
+    doLast{
+    	println 'load test data'
+    }
+}
+
+setupDatabaseTests.doFirst {
+    println 'create schema'
+}
+
+
+// -------------------
+// Отправка электронного письма для случая, когда компиляция прошла успешно
+task emailMe(dependsOn: compileJava) {
+	doLast{
+		if (tasks.compileJava.didWork) {				// didWork - Свойство типа boolean, указывающее, завершилась ли задача успешно.
+        	println 'SEND E-MAIL ANNOUNCING SUCCESS'
+    	}
+	} 
+}
+
+// ------------- Some tasks --------------
+task loadfile {
+    doLast {
+        def files = file('./antLoadfileResources').listFiles().sort()
+        files.each { File file ->
+            if (file.isFile()) {
+                ant.loadfile(srcFile: file, property: file.name)
+                println " *** $file.name ***"
+                println "${ant.properties[file.name]}"
+            }
+        }
+    }
+}
+
+
+task encodeString {
+    doLast {
+        def byte[] encodedString = new Base64().encode('hello world\n'.getBytes())
+        println new String(encodedString)
+    }
+}
+
+
+task copy(type: Copy) {
+	description 'Copies the resource directory to the target directory.'
+    from 'resources'
+    into 'target'
+    include('**/*.txt', '**/*.xml', '**/*.properties')
+}
+
+
+
+// ---------- Baeldung ------
+class PrintToolVersionTask extends DefaultTask {
+    String tool
+
+    @TaskAction
+    void printToolVersion() {
+        switch (tool) {
+            case 'java':
+                println System.getProperty("java.version")
+                break
+            case 'groovy':
+                println GroovySystem.version
+                break
+            default:
+                throw new IllegalArgumentException("Unknown tool")
+        }
+    }
+}
+
+
+task printJavaVersion(type : PrintToolVersionTask) {
+    tool 'java'
+}
+
+task printGroovyVersion(type : PrintToolVersionTask) {
+    tool 'groovy'
+}
+

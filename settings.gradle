@@ -1,0 +1,5 @@
+// Название нашего проекта
+rootProject.name = 'Gradle_Multiproject'
+
+// Какие папки подключать
+include 'main_project', 'library_project'

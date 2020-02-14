@@ -1,0 +1,34 @@
+// Подключение плагинов
+apply plugin: "java"			// Содержит задачи собрать jar и.т.д    https://docs.gradle.org/current/userguide/java_plugin.html
+apply plugin: "application"		// Содержит задачи run, installApp и.т.д  (https://docs.gradle.org/current/userguide/application_plugin.html)
+
+// При запуске в консоли команды gradle wrapper - создаются исполняемые файлы gradlew
+
+// task wrapper(type: Wrapper) {
+//    gradleVersion = '6.1.1'
+// }
+
+// Переменная mainClassName указывает главный класс нашего приложения и используется плагином application в задаче run 
+mainClassName = "com.example.Main"
+
+sourceCompatibility = JavaVersion.VERSION_1_7
+targetCompatibility = JavaVersion.VERSION_1_7
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	compile "log4j:log4j:1.2.17"
+	// или более подробно - complie group: 'log4j', name: 'log4j', version: '1.2.17'
+
+	// compile files('libs/a.jar', 'libs/b.jar')   -- зависимость от файлов
+	// compile project(':library_project')  -- зависимость от проектов
+
+	// Импортирование модуля library_project описанного в settings.gradle в корне проекта
+	compile project(':library_project')
+}
+
+jar {
+	manifest.attributes("Main-Class": mainClassName);
+}

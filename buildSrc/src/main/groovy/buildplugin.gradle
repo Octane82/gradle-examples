@@ -1,0 +1,12 @@
+class GreetingPlugin implements Plugin<Project> {
+    void apply(Project project) {
+        project.task('helloplugingroovy') {
+            doLast {
+                println 'Hello from the GreetingPlugin (Groovy)'
+            }
+        }
+    }
+}
+
+// Apply the plugin
+//apply plugin: GreetingPlugin
